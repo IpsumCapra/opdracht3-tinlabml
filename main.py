@@ -18,13 +18,20 @@ sampleFileName = 'default.samples'
 def getTargetVelocity(steeringAngle):
     return (90 - abs(steeringAngle)) / 60
 
+
 pygame.init()
 display = pygame.display.set_mode((300, 300))
 
 angleStep = 1
 
+
 class ManualControl:
     def __init__(self):
+        self.halfApertureAngle = None
+        self.sectorAngle = None
+        self.halfMiddleApertureAngle = None
+        self.lidarDistances = None
+
         self.steeringAngle = 0
         self.brake = True
 
@@ -35,9 +42,19 @@ class ManualControl:
 
                 while True:
                     event = pygame.event.get()
+                    self.input()
                     self.output(event)
                     self.logLidarTraining()
                     tm.sleep(0.04)
+
+    def input(self):
+        sensors = self.socketWrapper.recv()
+
+        self.halfApertureAngle = sensors['halfApertureAngle']
+        self.sectorAngle = 2 * self.halfApertureAngle / lidarInputDim
+        self.halfMiddleApertureAngle = sensors['halfMiddleApertureAngle']
+
+        self.lidarDistances = sensors['lidarDistances']
 
     def output(self, event):
         keys = pygame.key.get_pressed()
@@ -66,7 +83,14 @@ class ManualControl:
         self.socketWrapper.send(actuators)
 
     def logLidarTraining(self):
-        pass
+        sample = [finity for entryIndex in range(lidarInputDim + 1)]
+
+        for lidarAngle in range(-self.halfApertureAngle, self.halfApertureAngle):
+            sectorIndex = round(lidarAngle / self.sectorAngle)
+            sample[sectorIndex] = min(sample[sectorIndex], self.lidarDistances[lidarAngle])
+
+        sample[-1] = self.steeringAngle
+        print(*sample, file=self.sampleFile)
 
 
 ManualControl()
