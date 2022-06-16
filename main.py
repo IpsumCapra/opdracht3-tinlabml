@@ -27,6 +27,9 @@ angleStep = 1
 
 class ManualControl:
     def __init__(self):
+
+        self.manual = True if not 'n' in input("Manual? [Y/n]").lower() else False
+
         self.halfApertureAngle = None
         self.sectorAngle = None
         self.halfMiddleApertureAngle = None
@@ -43,8 +46,11 @@ class ManualControl:
                 while True:
                     event = pygame.event.get()
                     self.input()
+                    if not self.manual:
+                        self.lidarSweep()
                     self.output(event)
-                    self.logLidarTraining()
+                    if not self.brake:
+                        self.logLidarTraining()
                     tm.sleep(0.04)
 
     def input(self):
@@ -59,28 +65,52 @@ class ManualControl:
     def output(self, event):
         keys = pygame.key.get_pressed()
 
-        # Go left.
-        if keys[pygame.K_a]:
-            self.steeringAngle = max(self.steeringAngle + angleStep, -90)
-        # Go right.
-        elif keys[pygame.K_d]:
-            self.steeringAngle = min(self.steeringAngle - angleStep, 90)
-        # else:
-        #     if self.steeringAngle > 0:
-        #         self.steeringAngle -= angleStep
-        #     elif self.steeringAngle < 0:
-        #         self.steeringAngle += angleStep
+        if self.manual:
+            # Go left.
+            if keys[pygame.K_a]:
+                self.steeringAngle = max(self.steeringAngle + angleStep, -90)
+            # Go right.
+            elif keys[pygame.K_d]:
+                self.steeringAngle = min(self.steeringAngle - angleStep, 90)
 
         for e in event:
             if e.type == pygame.KEYDOWN and keys[pygame.K_TAB]:
                 self.brake = not self.brake
 
+        self.targetVelocity = 0.5 if self.manual else getTargetVelocity(self.steeringAngle)
+
         actuators = {
             'steeringAngle': self.steeringAngle,
-            'targetVelocity': 0.5 if not self.brake else 0
+            'targetVelocity': self.targetVelocity if not self.brake else 0
         }
 
         self.socketWrapper.send(actuators)
+
+    def lidarSweep(self):
+        nearestObstacleDistance = finity
+        nearestObstacleAngle = 0
+
+        nextObstacleDistance = finity
+        nextObstacleAngle = 0
+
+        for lidarAngle in range(-self.halfApertureAngle, self.halfApertureAngle):
+            lidarDistance = self.lidarDistances[lidarAngle]
+
+            if lidarDistance < nearestObstacleDistance:
+                nextObstacleDistance = nearestObstacleDistance
+                nextObstacleAngle = nearestObstacleAngle
+
+                nearestObstacleDistance = lidarDistance
+                nearestObstacleAngle = lidarAngle
+
+            elif lidarDistance < nextObstacleDistance:
+                nextObstacleDistance = lidarDistance
+                nextObstacleAngle = lidarAngle
+
+        targetObstacleDistance = (nearestObstacleDistance + nextObstacleDistance) / 2
+
+        self.steeringAngle = (nearestObstacleAngle + nextObstacleAngle) / 2
+        self.targetVelocity = getTargetVelocity(self.steeringAngle)
 
     def logLidarTraining(self):
         sample = [finity for entryIndex in range(lidarInputDim + 1)]
