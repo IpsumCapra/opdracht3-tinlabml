@@ -2,6 +2,8 @@ import time as tm
 import socket as sc
 import socket_wrapper as sw
 import numpy as np
+import os
+import pickle
 from sklearn.neural_network import MLPRegressor
 
 finity = 20.0  # Needs to be float to obtain ditto numpy array
@@ -12,6 +14,8 @@ sampleFileName = 'datasets/default.samples'
 
 X = np.loadtxt("datasets/dataSet", delimiter=' ')
 
+modelSaveFile = 'model.sav'
+
 
 def getTargetVelocity(steeringAngle):
     return (90 - abs(steeringAngle)) / 60
@@ -21,10 +25,18 @@ class AIClient:
     def __init__(self):
         self.steeringAngle = 0
 
-        self.neuralNet = MLPRegressor(random_state=1, max_iter=100000)
-        self.neuralNet.fit(X[:, :-1], X[:, -1])
-        print("Debug: Training finished")
-        print(self.neuralNet.n_iter_)
+        createModel = input("Create new model? [y/N]")
+
+        if 'y' not in createModel.lower():
+            try:
+                self.neuralNet = pickle.load(open(modelSaveFile, 'rb'))
+            except Exception:
+                raise FileNotFoundError
+        else:
+            self.neuralNet = MLPRegressor(random_state=1, max_iter=100000)
+            self.neuralNet.fit(X[:, :-1], X[:, -1])
+            pickle.dump(self.neuralNet, open(modelSaveFile, 'wb'))
+            print(f"Training finished in {self.neuralNet.n_iter_} cycles.")
 
         with open(sampleFileName, 'w') as self.sampleFile:
             with sc.socket(*sw.socketType) as self.clientSocket:
@@ -85,7 +97,7 @@ class AIClient:
     def output(self):
         print(self.steeringAngle)
         actuators = {
-            'steeringAngle': self.steeringAngle,
+            'steeringAngle': self.steeringAngle * 2,
             'targetVelocity': self.targetVelocity
         }
 
