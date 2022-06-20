@@ -10,9 +10,9 @@ finity = 20.0  # Needs to be float to obtain ditto numpy array
 
 lidarInputDim = 16
 
-sampleFileName = 'datasets/default.samplez'
+sampleFileName = 'datasets/default.samplezz'
 
-X = np.loadtxt("datasets/default.samplez", delimiter=' ')
+X = np.loadtxt("datasets/default.samplezz", delimiter=' ')
 
 modelSaveFile = 'model.sav'
 
@@ -36,7 +36,7 @@ class AIClient:
         else:
             print("Training...")
             self.neuralNet = MLPRegressor(learning_rate_init=0.005,
-                                          n_iter_no_change=50,
+                                          n_iter_no_change=75,
                                           verbose=True,
                                           random_state=1,
                                           hidden_layer_sizes=(128, 128, 128),
@@ -73,7 +73,9 @@ class AIClient:
             sectorIndex = round(lidarAngle / self.sectorAngle)
             sample[sectorIndex] = min(sample[sectorIndex], self.lidarDistances[lidarAngle])
 
-        lowest = sample[:].sort()[:4]
+        lowest = sample[:]
+        lowest.sort()
+        lowest = lowest[:4]
 
         for i in range(len(sample)):
             if sample[i] not in lowest:
