@@ -73,6 +73,12 @@ class AIClient:
             sectorIndex = round(lidarAngle / self.sectorAngle)
             sample[sectorIndex] = min(sample[sectorIndex], self.lidarDistances[lidarAngle])
 
+        lowest = sample[:].sort()[:4]
+
+        for i in range(len(sample)):
+            if sample[i] not in lowest:
+                sample[i] = finity
+
         numpySample = np.array(sample).reshape(1, -1)
 
         self.steeringAngle = self.neuralNet.predict(numpySample)[0]
