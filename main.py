@@ -119,6 +119,14 @@ class ManualControl:
             sectorIndex = round(lidarAngle / self.sectorAngle)
             sample[sectorIndex] = min(sample[sectorIndex], self.lidarDistances[lidarAngle])
 
+        lowest = sample[:]
+        lowest.sort()
+        lowest = lowest[:4]
+
+        for i in range(len(sample)):
+            if sample[i] not in lowest:
+                sample[i] = finity
+
         sample[-1] = self.steeringAngle
         print(*sample, file=self.sampleFile)
 
