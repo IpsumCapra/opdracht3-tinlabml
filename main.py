@@ -10,9 +10,9 @@ finity = 20.0  # Needs to be float to obtain ditto numpy array
 
 lidarInputDim = 16
 
-sampleFileName = 'datasets/default.samples'
+sampleFileName = 'datasets/default.samplez'
 
-X = np.loadtxt("datasets/default.samples", delimiter=' ')
+X = np.loadtxt("datasets/default.samplez", delimiter=' ')
 
 modelSaveFile = 'model.sav'
 
@@ -36,7 +36,7 @@ class AIClient:
         else:
             print("Training...")
             self.neuralNet = MLPRegressor(learning_rate_init=0.005,
-                                          n_iter_no_change=200,
+                                          n_iter_no_change=50,
                                           verbose=True,
                                           random_state=1,
                                           hidden_layer_sizes=(128, 128, 128),
