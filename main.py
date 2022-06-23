@@ -5,6 +5,7 @@ import os
 import socket as sc
 import pygame
 
+# Program parameters.
 ss.path += [os.path.abspath(relPath) for relPath in ('..',)]
 
 finity = 20.0  # Needs to be float to obtain ditto numpy array
@@ -14,20 +15,22 @@ sonarInputDim = 3
 
 sampleFileName = 'default.samples'
 
+angleStep = 1
+
 
 def getTargetVelocity(steeringAngle):
     return (90 - abs(steeringAngle)) / 60
 
 
+# Start pygame for manual control.
 pygame.init()
 display = pygame.display.set_mode((300, 300))
-
-angleStep = 1
 
 
 class ManualControl:
     def __init__(self):
-
+        # Initial defines.
+        # Determine whether to allow user control, or use hardcoded driving.
         self.manual = True if not 'n' in input("Manual? [Y/n]").lower() else False
 
         self.halfApertureAngle = None
@@ -38,21 +41,30 @@ class ManualControl:
         self.steeringAngle = 0
         self.brake = True
 
+        # Connect to world.
         with open(sampleFileName, 'w') as self.sampleFile:
             with sc.socket(*sw.socketType) as self.clientSocket:
                 self.clientSocket.connect(sw.address)
                 self.socketWrapper = sw.SocketWrapper(self.clientSocket)
 
+                # Car driving loop.
                 while True:
+                    # Get key presses.
                     event = pygame.event.get()
+
                     self.input()
+
+                    # Either use user input to drive, or drive hardcoded.
                     if not self.manual:
                         self.lidarSweep()
                     self.output(event)
+
+                    # Only log information while actually driving.
                     if not self.brake:
                         self.logLidarTraining()
                     tm.sleep(0.04)
 
+    # Process world sensor input.
     def input(self):
         sensors = self.socketWrapper.recv()
 
@@ -62,7 +74,10 @@ class ManualControl:
 
         self.lidarDistances = sensors['lidarDistances']
 
+    # Output to world.
     def output(self, event):
+
+        # Get pressed keys, check manual steering angle, only if enabled.
         keys = pygame.key.get_pressed()
 
         if self.manual:
@@ -77,15 +92,17 @@ class ManualControl:
             if e.type == pygame.KEYDOWN and keys[pygame.K_TAB]:
                 self.brake = not self.brake
 
+        # Set target velocity according to driving mode (auto/manual)
         self.targetVelocity = 0.5 if self.manual else getTargetVelocity(self.steeringAngle)
 
         actuators = {
             'steeringAngle': self.steeringAngle,
-            'targetVelocity': self.targetVelocity if not self.brake else 0
+            'targetVelocity': self.targetVelocity if not self.brake else 0 # Only drive if brake is off.
         }
 
         self.socketWrapper.send(actuators)
 
+    # Standard lidar sweep function from hardcoded_client.py
     def lidarSweep(self):
         nearestObstacleDistance = finity
         nearestObstacleAngle = 0
@@ -112,6 +129,7 @@ class ManualControl:
         self.steeringAngle = (nearestObstacleAngle + nextObstacleAngle) / 2
         self.targetVelocity = getTargetVelocity(self.steeringAngle)
 
+    # Altered logging from hardcoded_client.py
     def logLidarTraining(self):
         sample = [finity for entryIndex in range(lidarInputDim + 1)]
 
@@ -119,6 +137,7 @@ class ManualControl:
             sectorIndex = round(lidarAngle / self.sectorAngle)
             sample[sectorIndex] = min(sample[sectorIndex], self.lidarDistances[lidarAngle])
 
+        # Alter information to only store two closest items. Other items are set to finity. (Like in AIClient)
         lowest = sample[:]
         lowest.sort()
         lowest = lowest[:2]
@@ -130,5 +149,5 @@ class ManualControl:
         sample[-1] = self.steeringAngle
         print(*sample, file=self.sampleFile)
 
-
+# Run manual control.
 ManualControl()
