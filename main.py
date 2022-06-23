@@ -12,7 +12,7 @@ lidarInputDim = 16
 
 sampleFileName = 'datasets/default.samples'
 
-X = np.loadtxt("datasets/defaults.samples", delimiter=' ')
+X = np.loadtxt("datasets/default.samples", delimiter=' ')
 
 modelSaveFile = 'model.sav'
 
@@ -36,10 +36,11 @@ class AIClient:
         else:
             print("Training...")
             self.neuralNet = MLPRegressor(learning_rate_init=0.005,
-                                          n_iter_no_change=500,
+                                          n_iter_no_change=30,
                                           verbose=True,
                                           random_state=1,
-                                          hidden_layer_sizes=(128, 128, 128),
+                                          hidden_layer_sizes=(50, 70, 100, 200, 100, 70, 50),
+                                          alpha=5,
                                           max_iter=100000)
             self.neuralNet.fit(X[:, :-1], X[:, -1])
             print(self.neuralNet.best_loss_)
@@ -75,7 +76,7 @@ class AIClient:
 
         lowest = sample[:]
         lowest.sort()
-        lowest = lowest[:2]
+        lowest = lowest[:]
 
         for i in range(len(sample)):
             if sample[i] not in lowest:
