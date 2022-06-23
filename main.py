@@ -121,7 +121,7 @@ class ManualControl:
 
         lowest = sample[:]
         lowest.sort()
-        lowest = lowest[:]
+        lowest = lowest[:2]
 
         for i in range(len(sample)):
             if sample[i] not in lowest:
