@@ -16,7 +16,7 @@ sampleFileName = 'datasets/defaultz.samples'
 
 X = np.loadtxt("datasets/defaultz.samples", delimiter=' ')
 
-modelSaveFile = 'generalized5NN.txt'
+modelSaveFile = 'model.sav'
 
 
 # Calculate target velocity, based on steering angle.
